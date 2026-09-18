@@ -187,7 +187,7 @@ type State = {
     label: string;
     items: $TSFixMe[];
     ids: number[];
-    user: $TSFixMe;
+    user: null;
 };
 
 class Foo extends React.Component<object, State> {

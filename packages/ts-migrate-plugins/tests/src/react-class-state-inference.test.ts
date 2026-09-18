@@ -48,6 +48,33 @@ export default Foo;
 };`);
   });
 
+  it('keeps null when a later observation resolves to a concrete type', async () => {
+    const result = await runPlugin(`import React from 'react';
+
+function makeTimer(): { id: number } {
+  return { id: 0 };
+}
+
+class Foo extends React.Component {
+  state = { timer: null };
+
+  componentDidMount() {
+    this.setState({ timer: makeTimer() });
+  }
+
+  render() {
+    return <div>{this.state.timer?.id}</div>;
+  }
+}
+
+export default Foo;
+`);
+
+    expect(stateAlias(result)).toBe(`type State = {
+    timer: null | ReturnType<typeof makeTimer>;
+};`);
+  });
+
   it('parenthesizes an array element two observations disagree about', async () => {
     const result = await runPlugin(`import React from 'react';
 
