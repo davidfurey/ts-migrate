@@ -556,6 +556,41 @@ export default Foo;
     expect(result).not.toContain('{ Timer }');
   });
 
+  it('refuses a member the checker names with a typeof the file cannot reach', async () => {
+    // A class declared inside a function is a name nothing can import, and the
+    // checker writes the value it is as `typeof Widget`, not as a type
+    // reference. Written out, the member would name a binding the file has no
+    // way to have.
+    const lib = `export function pickWidget() {
+  class Widget {
+    id = 1;
+  }
+  return Widget;
+}
+`;
+    const result = await runPlugin(
+      `import React from 'react';
+import { pickWidget } from '/lib';
+
+class Foo extends React.Component {
+  state = { widget: pickWidget() };
+
+  render() {
+    return <div>{this.state.widget.name}</div>;
+  }
+}
+
+export default Foo;
+`,
+      { extraFiles: { 'lib.ts': lib } },
+    );
+
+    expect(stateAlias(result)).toBe(`type State = {
+    widget: ReturnType<typeof pickWidget>;
+};`);
+    expect(result).not.toContain('typeof Widget');
+  });
+
   it('writes any where the type cannot be named and neither can the expression', async () => {
     const lib = `export function makeTimer() {
   interface Timer {

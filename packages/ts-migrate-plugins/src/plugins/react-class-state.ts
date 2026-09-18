@@ -508,14 +508,18 @@ function collectScope(checker: ts.TypeChecker, sourceFile: ts.SourceFile): Map<s
   return scope;
 }
 
-// The names a type node spells. A `typeof` query names a binding
-// moduleScopedName already found at the top level of this file.
+// The names a type node spells, whether it names a type or, in a `typeof`
+// query the checker printed, a value.
 function collectTypeNames(node: ts.TypeNode, out: Set<string>): void {
   if (ts.isTypeReferenceNode(node)) {
     let entityName: ts.EntityName = node.typeName;
     while (ts.isQualifiedName(entityName)) entityName = entityName.left;
     out.add(entityName.text);
     node.typeArguments?.forEach((argument) => collectTypeNames(argument, out));
+  } else if (ts.isTypeQueryNode(node)) {
+    let entityName: ts.EntityName = node.exprName;
+    while (ts.isQualifiedName(entityName)) entityName = entityName.left;
+    out.add(entityName.text);
   } else if (ts.isUnionTypeNode(node)) {
     node.types.forEach((type) => collectTypeNames(type, out));
   } else if (ts.isArrayTypeNode(node)) {
