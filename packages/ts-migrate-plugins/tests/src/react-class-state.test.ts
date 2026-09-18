@@ -1,10 +1,14 @@
 import ts from 'typescript';
-import { PluginResult } from '@obiemunoz/ts-migrate-server';
+import { Plugin } from '@obiemunoz/ts-migrate-server';
 import reactClassStatePlugin from '../../src/plugins/react-class-state';
 import { pluginRunner, realPluginRunner } from '../test-utils';
 
 type Options = { anyAlias?: string };
-type RunCase = (text: string, overrides?: { options?: Options }) => Promise<PluginResult>;
+
+type RunCase = (
+  text: string,
+  overrides?: { options?: Options },
+) => ReturnType<Plugin<Options>['run']>;
 
 const withoutProgram = pluginRunner<Options>(reactClassStatePlugin, {
   fileName: 'file.tsx',
@@ -25,8 +29,8 @@ const withChecker = realPluginRunner<Options>(reactClassStatePlugin, {
  * are in react-class-state-inference.test.ts.
  */
 const harnesses: [string, RunCase][] = [
-  ['without a program', async (text, overrides) => withoutProgram(text, overrides)],
-  ['with a checker', async (text, overrides) => withChecker(text, overrides)],
+  ['without a program', withoutProgram],
+  ['with a checker', withChecker],
 ];
 
 describe.each(harnesses)('react-class-state plugin, %s', (_harness, runPlugin) => {
