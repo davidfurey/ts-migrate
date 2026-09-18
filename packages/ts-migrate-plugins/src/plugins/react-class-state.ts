@@ -454,11 +454,12 @@ function createResolution(
     checker,
     imports,
     resolveImports: (type, names) => {
-      const resolved: NamedImport[] = [];
+      const collected: NamedImport[] = [];
       // Every symbol the walk considered, which is what the names printed for
       // this type stand for.
       const seen = new Set<ts.Symbol>();
-      collectImportSpecs(type, checker, fileName, seen, resolved);
+      collectImportSpecs(type, checker, fileName, seen, collected);
+      const resolved = collected.map((spec) => ({ ...spec, isTypeOnly: true }));
       const importable = new Set(resolved.map(({ namedImport }) => namedImport));
       const printedAs = new Map<string, ts.Symbol>();
       const ambiguous = new Set<string>();

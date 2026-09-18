@@ -440,7 +440,32 @@ export default Foo;
     expect(stateAlias(result)).toBe(`type State = {
     timer: Timer;
 };`);
-    expect(result).toMatch(/import \{ Timer \} from ["'].*lib["']/);
+    expect(result).toMatch(/import \{ type Timer \} from ["'].*lib["']/);
+  });
+
+  it('marks an imported state member name as type only', async () => {
+    const lib = `
+export type Timer = { id: number };
+export declare function makeTimer(): Timer;
+`;
+    const result = await runPlugin(
+      `import React from 'react';
+    import { makeTimer } from './lib';
+
+class Foo extends React.Component {
+  state = { timer: makeTimer() };
+
+  render() {
+    return <div>{this.state.timer.id}</div>;
+  }
+}
+
+export default Foo;
+`,
+      { extraFiles: { 'lib.ts': lib } },
+    );
+
+    expect(result).toMatch(/import \{ makeTimer, type Timer \} from ["'].*lib["']/);
   });
 
   it('writes a member type the file already has a name for', async () => {
@@ -471,7 +496,7 @@ export default Foo;
 };`);
     // The default import the file already has is the name, and a named import
     // of it would not be.
-    expect(result).not.toContain('{ Notification }');
+    expect(result).not.toMatch(/import \{ (?:type )?Notification \}/);
   });
 
   it('refuses a member whose type only shares a name with what the file has', async () => {
@@ -571,7 +596,7 @@ export default Foo;
     timer: Timer;
     other: ReturnType<typeof makeOtherTimer>;
 };`);
-    expect(result?.match(/import \{ Timer \}/g)).toHaveLength(1);
+    expect(result?.match(/import \{ type Timer \}/g)).toHaveLength(1);
   });
 
   it('refuses a member whose own type spells one name for two types', async () => {
@@ -605,7 +630,7 @@ export default Foo;
     expect(stateAlias(result)).toBe(`type State = {
     timer: ReturnType<typeof makeTimer>;
 };`);
-    expect(result).not.toContain('{ Timer }');
+    expect(result).not.toMatch(/import \{ (?:type )?Timer \}/);
   });
 
   it('names the alias around an import a member needed', async () => {
@@ -634,7 +659,7 @@ export default Foo;
     expect(stateAlias(result)).toBe(`type State1 = {
     value: State;
 };`);
-    expect(result).toMatch(/import \{ State \} from ["'].*lib["']/);
+    expect(result).toMatch(/import \{ type State \} from ["'].*lib["']/);
   });
 
   it('refuses a member type the file has no way to name', async () => {
@@ -670,7 +695,7 @@ export default Foo;
     expect(stateAlias(result)).toBe(`type State = {
     timer: ReturnType<typeof makeTimer>;
 };`);
-    expect(result).not.toContain('{ Timer }');
+    expect(result).not.toMatch(/import \{ (?:type )?Timer \}/);
   });
 
   it('refuses a module-private member type', async () => {
@@ -697,7 +722,7 @@ export default Foo;
     expect(stateAlias(result)).toBe(`type State = {
     timer: ReturnType<typeof makeTimer>;
 };`);
-    expect(result).not.toContain('{ Timer }');
+    expect(result).not.toMatch(/import \{ (?:type )?Timer \}/);
   });
 
   it('refuses a member the checker names with a typeof the file cannot reach', async () => {
