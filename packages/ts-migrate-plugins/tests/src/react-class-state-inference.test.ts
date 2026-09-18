@@ -20,8 +20,9 @@ const runPlugin = realPluginRunner(reactClassStatePlugin, {
  * The state alias out of the file the plugin returned. Asserting on the whole
  * of it is what catches a member the input gave no reason to write.
  */
-function stateAlias(result: string | undefined): string {
-  return /^type \w*State\d* = (?:\{[\s\S]*?\n\}|[^\n{]+);$/m.exec(result ?? '')?.[0] ?? '';
+function stateAlias(result: Awaited<ReturnType<typeof runPlugin>>): string {
+  const text = typeof result === 'string' ? result : '';
+  return /^type \w*State\d* = (?:\{[\s\S]*?\n\}|[^\n{]+);$/m.exec(text)?.[0] ?? '';
 }
 
 describe('react-class-state plugin, what the checker resolves', () => {
