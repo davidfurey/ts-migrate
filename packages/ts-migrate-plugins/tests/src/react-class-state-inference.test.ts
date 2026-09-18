@@ -824,6 +824,48 @@ export default Foo;
 };`);
   });
 
+  it('names a call whose generic type contains a shape it cannot write', async () => {
+    const result = await runPlugin(`import React from 'react';
+
+declare function loadConfig(): Promise<{ retries: number }>;
+
+class Foo extends React.Component {
+  state = { config: loadConfig() };
+
+  render() {
+    return <div>{this.state.config}</div>;
+  }
+}
+
+export default Foo;
+`);
+
+    expect(stateAlias(result)).toBe(`type State = {
+    config: ReturnType<typeof loadConfig>;
+};`);
+  });
+
+  it('keeps a generic type that explicitly contains any', async () => {
+    const result = await runPlugin(`import React from 'react';
+
+declare function loadConfig(): Promise<any>;
+
+class Foo extends React.Component {
+  state = { config: loadConfig() };
+
+  render() {
+    return <div>{this.state.config}</div>;
+  }
+}
+
+export default Foo;
+`);
+
+    expect(stateAlias(result)).toBe(`type State = {
+    config: Promise<$TSFixMe>;
+};`);
+  });
+
   it('names a module-scoped binding whose type cannot be written', async () => {
     const result = await runPlugin(`import React from 'react';
 

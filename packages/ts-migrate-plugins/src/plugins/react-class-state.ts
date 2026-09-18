@@ -58,6 +58,7 @@ const printer = ts.createPrinter();
 // Somewhere to print a synthesized node into, for comparing one against another.
 // Shared across runs, so nothing per-run belongs here.
 const scratchFile = ts.createSourceFile('scratch.ts', '', ts.ScriptTarget.Latest);
+const unsupportedTypeName = '$TsMigrateUnsupportedType';
 
 const reactClassStatePlugin: Plugin<Options> = {
   name: 'react-class-state',
@@ -624,6 +625,17 @@ function withAnyAlias(node: ts.TypeNode, anyAlias: string | undefined): ts.TypeN
   return node;
 }
 
+function containsUnsupportedType(node: ts.TypeNode): boolean {
+  if (ts.isTypeReferenceNode(node)) {
+    if (ts.isIdentifier(node.typeName) && node.typeName.text === unsupportedTypeName) return true;
+    return node.typeArguments?.some(containsUnsupportedType) ?? false;
+  }
+  if (ts.isUnionTypeNode(node)) return node.types.some(containsUnsupportedType);
+  if (ts.isArrayTypeNode(node)) return containsUnsupportedType(node.elementType);
+  if (ts.isParenthesizedTypeNode(node)) return containsUnsupportedType(node.type);
+  return false;
+}
+
 // What the checker says a type is, in the form the rest of this plugin writes.
 //
 // NoTruncation because typeToString otherwise cuts a long type off with `...`
@@ -651,7 +663,10 @@ function resolveType(
   // be spliced into the file as an absolute path rather than refused.
   if (typeStr.includes('import("')) return { kind: 'any' };
 
-  const node = withAnyAlias(buildTypeNode(typeStr), anyAlias);
+  const parsed = buildTypeNode(typeStr, unsupportedTypeName);
+  if (containsUnsupportedType(parsed)) return { kind: 'any' };
+
+  const node = withAnyAlias(parsed, anyAlias);
   if (isAnyTypeNode(node, anyAlias)) return { kind: 'any' };
 
   const names = new Set<string>();
