@@ -647,6 +647,33 @@ export default Foo;
     expect(result).not.toContain('{ Timer }');
   });
 
+  it('refuses a module-private member type', async () => {
+    const lib = `type Timer = { id: number };
+export declare function makeTimer(): Timer;
+`;
+    const result = await runPlugin(
+      `import React from 'react';
+import { makeTimer } from '/lib';
+
+class Foo extends React.Component {
+  state = { timer: makeTimer() };
+
+  render() {
+    return <div>{this.state.timer.id}</div>;
+  }
+}
+
+export default Foo;
+`,
+      { extraFiles: { 'lib.ts': lib } },
+    );
+
+    expect(stateAlias(result)).toBe(`type State = {
+    timer: ReturnType<typeof makeTimer>;
+};`);
+    expect(result).not.toContain('{ Timer }');
+  });
+
   it('refuses a member the checker names with a typeof the file cannot reach', async () => {
     // A class declared inside a function is a name nothing can import, and the
     // checker writes the value it is as `typeof Widget`, not as a type
