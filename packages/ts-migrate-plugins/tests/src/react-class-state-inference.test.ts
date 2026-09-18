@@ -330,6 +330,61 @@ export default Foo;
 };`);
   });
 
+  it('keeps a constructor write optional when an earlier return can skip it', async () => {
+    const result = await runPlugin(`import React from 'react';
+
+function makeTimer(): number {
+  return 0;
+}
+
+class Foo extends React.Component {
+  constructor(props: { withTimer: boolean }) {
+    super(props);
+    if (!props.withTimer) return;
+    this.state.timer = makeTimer();
+  }
+
+  render() {
+    return <div>{this.state.timer}</div>;
+  }
+}
+
+export default Foo;
+`);
+
+    expect(stateAlias(result)).toBe(`type State = {
+    timer?: number;
+};`);
+  });
+
+  it('does not depend on class member order when a later initializer omits a member', async () => {
+    const result = await runPlugin(`import React from 'react';
+
+class Foo extends React.Component {
+  componentDidMount() {
+    this.state = { open: true };
+  }
+
+  constructor(props: object) {
+    super(props);
+    this.state = { open: false };
+    this.state.timer = 0;
+  }
+
+  render() {
+    return <div>{this.state.open}</div>;
+  }
+}
+
+export default Foo;
+`);
+
+    expect(stateAlias(result)).toBe(`type State = {
+    open: boolean;
+    timer?: number;
+};`);
+  });
+
   it('does not keep a member required after a later whole-state assignment', async () => {
     const result = await runPlugin(`import React from 'react';
 

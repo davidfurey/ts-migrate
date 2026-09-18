@@ -402,7 +402,23 @@ function isUnconditionalConstructorWrite(
   while (ts.isBlock(node.parent)) {
     node = node.parent;
   }
-  return ts.isConstructorDeclaration(node.parent) && node.parent.parent === classDeclaration;
+  if (!ts.isConstructorDeclaration(node.parent) || node.parent.parent !== classDeclaration) {
+    return false;
+  }
+
+  const body = node;
+  let statement: ts.Node = assignment.parent;
+  while (statement.parent !== body) statement = statement.parent;
+  const statementIndex = body.statements.indexOf(statement as ts.Statement);
+  return body.statements.slice(0, statementIndex).every(isStraightLineStatement);
+}
+
+function isStraightLineStatement(statement: ts.Statement): boolean {
+  return (
+    ts.isExpressionStatement(statement) ||
+    ts.isVariableStatement(statement) ||
+    ts.isEmptyStatement(statement)
+  );
 }
 
 // The members the evidence describes, or undefined where it describes no
