@@ -302,7 +302,7 @@ export default Foo;
 };`);
   });
 
-  it('marks an unconditional constructor write as always set', async () => {
+  it('keeps a constructor write optional when an earlier state initializer omits it', async () => {
     const result = await runPlugin(`import React from 'react';
 
 function makeTimer(): number {
@@ -326,7 +326,7 @@ export default Foo;
 
     expect(stateAlias(result)).toBe(`type State = {
     open: boolean;
-    timer: number;
+    timer?: number;
 };`);
   });
 
