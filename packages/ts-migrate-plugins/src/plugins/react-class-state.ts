@@ -335,6 +335,8 @@ function collectStateEvidence(
   };
 
   const visit = (node: ts.Node) => {
+    if (ts.isClassLike(node) || (ts.isFunctionLike(node) && !ts.isArrowFunction(node))) return;
+
     if (isThisState(node)) {
       evidence.usesState = true;
     } else if (ts.isPropertyAccessExpression(node) && isThisState(node.expression)) {

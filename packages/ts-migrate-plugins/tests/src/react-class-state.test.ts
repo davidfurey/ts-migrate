@@ -657,4 +657,67 @@ class Foo extends React.Component<object, State> {
 export default Foo;
 `);
   });
+
+  it('ignores this.state in nested non-lexical scopes', async () => {
+    const text = `import React from 'react';
+
+class Foo extends React.Component {
+  state = { count: 0 };
+
+  setup() {
+    function helper() {
+      this.state.foreign = 'wrong component';
+    }
+    class Nested {
+      update() {
+        this.state.nested = true;
+      }
+    }
+    const update = () => {
+      this.state.ready = true;
+    };
+  }
+
+  render() {
+    return <div>{this.state.count}</div>;
+  }
+}
+
+export default Foo;
+`;
+
+    const result = await runPlugin(text);
+
+    expect(result).toBe(`import React from 'react';
+
+type State = {
+    count: number;
+    ready?: boolean;
+};
+
+class Foo extends React.Component<object, State> {
+  state: State = { count: 0 };
+
+  setup() {
+    function helper() {
+      this.state.foreign = 'wrong component';
+    }
+    class Nested {
+      update() {
+        this.state.nested = true;
+      }
+    }
+    const update = () => {
+      this.state.ready = true;
+    };
+  }
+
+  render() {
+    return <div>{this.state.count}</div>;
+  }
+}
+
+export default Foo;
+`);
+  });
 });
