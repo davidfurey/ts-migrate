@@ -74,6 +74,13 @@ describe('buildTypeNode', () => {
   it('reconstructs a nested generic', () => {
     expect(print('Array<Record<string, number>>')).toBe('Array<Record<string, number>>');
   });
+
+  it.each(['Set<"a\\\\b">', 'Set<"a\\"b">'])(
+    'preserves escapes in string literal types: %s',
+    (typeStr) => {
+      expect(print(typeStr)).toBe(typeStr);
+    },
+  );
 });
 
 describe('widenTypes', () => {

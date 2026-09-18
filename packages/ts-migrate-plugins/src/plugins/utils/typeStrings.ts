@@ -56,6 +56,13 @@ function createEntityName(dotted: string): ts.EntityName {
   return entityName;
 }
 
+function stringLiteralValue(typeStr: string): string | undefined {
+  const scanner = ts.createScanner(ts.ScriptTarget.Latest, false, ts.LanguageVariant.Standard, typeStr);
+  if (scanner.scan() !== ts.SyntaxKind.StringLiteral) return undefined;
+  const value = scanner.getTokenValue();
+  return scanner.scan() === ts.SyntaxKind.EndOfFileToken ? value : undefined;
+}
+
 // Convert a type string (as produced by checker.typeToString or our own
 // literal-union builder) to a ts.TypeNode using ts.factory calls only, so
 // the resulting nodes have no source positions and print cleanly.
@@ -77,17 +84,15 @@ export function buildTypeNode(typeStr: string, anyAlias?: string): ts.TypeNode {
     return ts.factory.createTypeQueryNode(createEntityName(typeofMatch[1]));
   }
 
-  // Double-quoted string literal
-  if (typeStr.startsWith('"') && typeStr.endsWith('"') && typeStr.length >= 2) {
-    return ts.factory.createLiteralTypeNode(
-      ts.factory.createStringLiteral(typeStr.slice(1, -1)),
-    );
-  }
-  // Single-quoted string literal
-  if (typeStr.startsWith("'") && typeStr.endsWith("'") && typeStr.length >= 2) {
-    return ts.factory.createLiteralTypeNode(
-      ts.factory.createStringLiteral(typeStr.slice(1, -1)),
-    );
+  if (
+    typeStr.length >= 2 &&
+    ((typeStr.startsWith('"') && typeStr.endsWith('"')) ||
+      (typeStr.startsWith("'") && typeStr.endsWith("'")))
+  ) {
+    const value = stringLiteralValue(typeStr);
+    if (value !== undefined) {
+      return ts.factory.createLiteralTypeNode(ts.factory.createStringLiteral(value));
+    }
   }
 
   // Numeric literal (including negative)
