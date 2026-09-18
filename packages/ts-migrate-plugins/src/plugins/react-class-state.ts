@@ -453,11 +453,23 @@ function createResolution(
       const seen = new Set<ts.Symbol>();
       collectImportSpecs(type, checker, fileName, seen, resolved);
       const importable = new Set(resolved.map(({ namedImport }) => namedImport));
-      const printedAs = new Map([...seen].map((symbol) => [symbol.getName(), symbol] as const));
+      const printedAs = new Map<string, ts.Symbol>();
+      const ambiguous = new Set<string>();
+      seen.forEach((symbol) => {
+        const name = symbol.getName();
+        const first = printedAs.get(name);
+        if (first === undefined) printedAs.set(name, symbol);
+        else if (first !== symbol) ambiguous.add(name);
+      });
       const scope = namesInScope();
 
       const writable = [...names].every((name) => {
         if (name === anyAlias) return true;
+        // Two of the walk's symbols print under this name, so the name is
+        // ambiguous and the one import the file can add picks one of the two
+        // types arbitrarily. The member would then be written as a type the
+        // checker never gave it.
+        if (ambiguous.has(name)) return false;
         const bound = scope.get(name);
         // A name the file already has has to stand for the thing the checker
         // printed it for, not for whatever else the file calls by it. Where the

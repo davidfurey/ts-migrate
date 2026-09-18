@@ -457,6 +457,40 @@ export default Foo;
 };`);
   });
 
+  it('refuses a member whose own type spells one name for two types', async () => {
+    const lib = `import { Timer as OtherTimer } from '/other';
+
+export type Timer = { id: number };
+export declare function makeTimer(): Timer | OtherTimer;
+`;
+    const other = `export type Timer = { tag: string };
+`;
+    const result = await runPlugin(
+      `import React from 'react';
+import { makeTimer } from '/lib';
+
+class Foo extends React.Component {
+  state = { timer: makeTimer() };
+
+  render() {
+    return <div>{this.state.timer}</div>;
+  }
+}
+
+export default Foo;
+`,
+      { extraFiles: { 'lib.ts': lib, 'other.ts': other } },
+    );
+
+    // Written out, the union's two members print the same name and the merge
+    // dedupes them to one, which the single import binds to one of the two
+    // types the checker had.
+    expect(stateAlias(result)).toBe(`type State = {
+    timer: ReturnType<typeof makeTimer>;
+};`);
+    expect(result).not.toContain('{ Timer }');
+  });
+
   it('names the alias around an import a member needed', async () => {
     const lib = `export type State = { id: number };
 export declare function makeState(): State;
