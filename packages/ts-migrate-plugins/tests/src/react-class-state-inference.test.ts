@@ -131,6 +131,8 @@ export default Foo;
     const result = await runPlugin(`import React from 'react';
 
 class StateBag {
+  private token = '';
+  protected attempts = 0;
   open = false;
 
   toggle() {
@@ -152,7 +154,7 @@ class Foo extends React.Component {
 export default Foo;
 `);
 
-    // `toggle` is what the component calls, not something it holds.
+    // Methods and inaccessible implementation fields are not public state members.
     expect(stateAlias(result)).toBe(`type State = {
     open: boolean;
 };`);

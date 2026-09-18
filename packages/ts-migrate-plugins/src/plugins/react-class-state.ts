@@ -237,7 +237,7 @@ function collectStateEvidence(
       ? resolution.checker
           .getTypeAtLocation(expression)
           .getProperties()
-          .filter((symbol) => (symbol.flags & ts.SymbolFlags.Property) !== 0)
+          .filter(isPublicProperty)
       : [];
     if (!resolution || properties.length === 0) {
       evidence.unknownMembers = true;
@@ -840,6 +840,14 @@ function getPropertyName(name: ts.PropertyName): string | undefined {
   }
 
   return undefined;
+}
+
+function isPublicProperty(symbol: ts.Symbol): boolean {
+  if ((symbol.flags & ts.SymbolFlags.Property) === 0) return false;
+  const nonPublic = ts.ModifierFlags.Private | ts.ModifierFlags.Protected;
+  return !(symbol.declarations ?? []).some(
+    (declaration) => (ts.getCombinedModifierFlags(declaration) & nonPublic) !== 0,
+  );
 }
 
 function isStateProperty(member: ts.ClassElement): member is ts.PropertyDeclaration {
