@@ -442,6 +442,7 @@ function createResolution(
   // Every global type there is, so read only once a type has resolved at all.
   let inScope: Map<string, ts.Symbol> | undefined;
   const namesInScope = () => (inScope ??= collectScope(checker, sourceFile));
+  const claimedNames = new Map<string, ts.Symbol>();
 
   return {
     checker,
@@ -470,6 +471,9 @@ function createResolution(
         // types arbitrarily. The member would then be written as a type the
         // checker never gave it.
         if (ambiguous.has(name)) return false;
+        const symbol = printedAs.get(name);
+        const claimed = claimedNames.get(name);
+        if (claimed !== undefined && symbol !== undefined && claimed !== symbol) return false;
         const bound = scope.get(name);
         // A name the file already has has to stand for the thing the checker
         // printed it for, not for whatever else the file calls by it. Where the
@@ -479,11 +483,16 @@ function createResolution(
         // the rest of the globals. Tightening this to a refusal writes `any`
         // for those.
         if (bound !== undefined) {
-          const symbol = printedAs.get(name);
           return symbol === undefined || symbol === bound;
         }
         return importable.has(name);
       });
+      if (writable) {
+        names.forEach((name) => {
+          const symbol = printedAs.get(name);
+          if (symbol !== undefined) claimedNames.set(name, symbol);
+        });
+      }
       return writable ? resolved : undefined;
     },
   };

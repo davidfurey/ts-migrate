@@ -484,6 +484,38 @@ export default Foo;
 };`);
   });
 
+  it('refuses a second importable type that shares an earlier member import name', async () => {
+    const lib = `export type Timer = { id: number };
+export declare function makeTimer(): Timer;
+`;
+    const other = `export type Timer = { tag: string };
+export declare function makeOtherTimer(): Timer;
+`;
+    const result = await runPlugin(
+      `import React from 'react';
+import { makeTimer } from '/lib';
+import { makeOtherTimer } from '/other';
+
+class Foo extends React.Component {
+  state = { timer: makeTimer(), other: makeOtherTimer() };
+
+  render() {
+    return <div>{this.state.timer.id}{this.state.other.tag}</div>;
+  }
+}
+
+export default Foo;
+`,
+      { extraFiles: { 'lib.ts': lib, 'other.ts': other } },
+    );
+
+    expect(stateAlias(result)).toBe(`type State = {
+    timer: Timer;
+    other: ReturnType<typeof makeOtherTimer>;
+};`);
+    expect(result?.match(/import \{ Timer \}/g)).toHaveLength(1);
+  });
+
   it('refuses a member whose own type spells one name for two types', async () => {
     const lib = `import { Timer as OtherTimer } from '/other';
 
