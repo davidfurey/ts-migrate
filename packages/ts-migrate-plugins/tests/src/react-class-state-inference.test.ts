@@ -161,6 +161,32 @@ export default Foo;
 };`);
   });
 
+  it('ignores computed properties a state alias cannot represent', async () => {
+    const result = await runPlugin(`import React from 'react';
+
+declare const key: unique symbol;
+
+class StateBag {
+  [key] = 'hidden';
+  count = 0;
+}
+
+class Foo extends React.Component {
+  state = new StateBag();
+
+  render() {
+    return <div>{this.state.count}</div>;
+  }
+}
+
+export default Foo;
+`);
+
+    expect(stateAlias(result)).toBe(`type State = {
+    count: number;
+};`);
+  });
+
   it('leaves a member optional that the state the initializer returns does not set', async () => {
     const result = await runPlugin(`import React from 'react';
 
