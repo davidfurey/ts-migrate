@@ -344,6 +344,9 @@ function collectStateEvidence(
       node.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
       isThisState(node.left)
     ) {
+      evidence.members.forEach((member) => {
+        member.alwaysSet = false;
+      });
       readStateInitializer(node.right);
     } else if (
       ts.isBinaryExpression(node) &&

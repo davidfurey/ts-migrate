@@ -276,6 +276,35 @@ export default Foo;
 };`);
   });
 
+  it('does not keep a member required after a later whole-state assignment', async () => {
+    const result = await runPlugin(`import React from 'react';
+
+function makeTimer(): number {
+  return 0;
+}
+
+class Foo extends React.Component {
+  constructor(props: object) {
+    super(props);
+    this.state = { open: false };
+    this.state.timer = makeTimer();
+    this.state = { open: true };
+  }
+
+  render() {
+    return <div>{this.state.open}</div>;
+  }
+}
+
+export default Foo;
+`);
+
+    expect(stateAlias(result)).toBe(`type State = {
+    open: boolean;
+    timer?: number;
+};`);
+  });
+
   it('keeps the initial type of a member a setState shorthand observes as any', async () => {
     // At migrate time the source has only just stopped being .jsx, so the
     // parameter the shorthand names is still implicitly any. The `string` the
