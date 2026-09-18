@@ -424,8 +424,8 @@ function inferStateMembers(
           : ts.factory.createStringLiteral(name),
         // Members an initializer does not set are undefined until setState writes them.
         !member.alwaysSet &&
-        evidence.numInitializers > 0 &&
-        member.numInitializers < evidence.numInitializers
+        (evidence.numInitializers === 0 ||
+          member.numInitializers < evidence.numInitializers)
           ? ts.factory.createToken(ts.SyntaxKind.QuestionToken)
           : undefined,
         typeNodeOf(member.type, anyAlias),

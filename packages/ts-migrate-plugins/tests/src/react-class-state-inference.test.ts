@@ -247,6 +247,31 @@ export default Foo;
 };`);
   });
 
+  it('marks a later write optional when the class has no state initializer', async () => {
+    const result = await runPlugin(`import React from 'react';
+
+function makeTimer(): number {
+  return 0;
+}
+
+class Foo extends React.Component {
+  componentDidMount() {
+    this.state.timer = makeTimer();
+  }
+
+  render() {
+    return <div>{this.state.timer}</div>;
+  }
+}
+
+export default Foo;
+`);
+
+    expect(stateAlias(result)).toBe(`type State = {
+    timer?: number;
+};`);
+  });
+
   it('does not mark a conditional constructor write as always set', async () => {
     const result = await runPlugin(`import React from 'react';
 
@@ -411,7 +436,7 @@ export default Foo;
 `);
 
     expect(stateAlias(result)).toBe(`type State = {
-    mins: string;
+    mins?: string;
 };`);
   });
 
