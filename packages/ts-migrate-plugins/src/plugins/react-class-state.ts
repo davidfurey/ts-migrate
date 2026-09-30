@@ -77,8 +77,7 @@ const reactClassStatePlugin: Plugin<Options> = {
 
     // Asked only where the syntax says nothing.
     const checker = getLanguageService?.().getProgram?.()?.getTypeChecker();
-    const resolution =
-      checker && createResolution(checker, sourceFile, fileName, anyAlias, neededImports);
+    let claimedNames = new Map<string, ts.Symbol>();
 
     const numComponentsInFile = getNumComponentsInSourceFile(sourceFile);
     const usedIdentifiers = collectIdentifiers(sourceFile);
@@ -91,8 +90,26 @@ const reactClassStatePlugin: Plugin<Options> = {
       const stateType = heritageTypeArgs[1];
       if (stateType) return;
 
+      const componentImports: NamedImport[] = [];
+      const componentClaims = new Map(claimedNames);
+      const resolution =
+        checker &&
+        createResolution(
+          checker,
+          sourceFile,
+          fileName,
+          anyAlias,
+          componentImports,
+          componentClaims,
+        );
       const evidence = collectStateEvidence(classDeclaration, resolution, anyAlias);
       if (!evidence.usesState) return;
+
+      const inferredMembers = inferStateMembers(evidence, anyAlias);
+      if (inferredMembers) {
+        neededImports.push(...componentImports);
+        claimedNames = componentClaims;
+      }
 
       // An import a member's type needed can be named `State` too, and it is
       // not among the identifiers the file had when they were collected.
@@ -112,7 +129,6 @@ const reactClassStatePlugin: Plugin<Options> = {
       };
 
       const stateTypeName = getStateTypeName();
-      const inferredMembers = inferStateMembers(evidence, anyAlias);
       const newStateType = ts.factory.createTypeAliasDeclaration(
         undefined,
         stateTypeName,
@@ -459,12 +475,11 @@ function createResolution(
   fileName: string,
   anyAlias: string | undefined,
   imports: NamedImport[],
+  claimedNames: Map<string, ts.Symbol>,
 ): Resolution {
   // Every global type there is, so read only once a type has resolved at all.
   let inScope: Map<string, ts.Symbol> | undefined;
   const namesInScope = () => (inScope ??= collectScope(checker, sourceFile));
-  const claimedNames = new Map<string, ts.Symbol>();
-
   return {
     checker,
     imports,

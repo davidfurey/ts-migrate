@@ -709,6 +709,51 @@ export default Foo;
     expect(result?.match(/import \{ type Timer \}/g)).toHaveLength(1);
   });
 
+  it('does not reserve an import name for a discarded component state shape', async () => {
+    const first = `export type Timer = { first: number };
+export declare function makeTimer(): Timer;
+`;
+    const second = `export type Timer = { second: number };
+export const timers = {
+  makeTimer(): Timer {
+    return { second: 0 };
+  },
+};
+`;
+    const result = await runPlugin(
+      `import React from 'react';
+import { makeTimer } from '/first';
+import { timers } from '/second';
+
+declare const extra: object;
+
+class First extends React.Component {
+  state = { timer: makeTimer(), ...extra };
+
+  render() {
+    return <div>{this.state.timer.first}</div>;
+  }
+}
+
+class Second extends React.Component {
+  state = { timer: timers.makeTimer() };
+
+  render() {
+    return <div>{this.state.timer.second}</div>;
+  }
+}
+`,
+      { extraFiles: { 'first.ts': first, 'second.ts': second } },
+    );
+
+    expect(result).toContain('type FirstState = $TSFixMe;');
+    expect(result).toContain(`type SecondState = {
+    timer: Timer;
+};`);
+    expect(result).toContain('import { type Timer } from "./second";');
+    expect(result).not.toContain('import { type Timer } from "./first";');
+  });
+
   it('refuses a member whose own type spells one name for two types', async () => {
     const lib = `import { Timer as OtherTimer } from '/other';
 
