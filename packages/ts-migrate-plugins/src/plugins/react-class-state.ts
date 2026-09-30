@@ -807,7 +807,7 @@ function deriveType(
 
 function isNoEvidenceType(type: ts.Type, checker: ts.TypeChecker): boolean {
   const text = checker.typeToString(checker.getBaseTypeOfLiteralType(type));
-  return /^(?:never|unknown|object|null|undefined|\{\})(?:\[\])*$/.test(text);
+  return /^(?:any|never|unknown|object|null|undefined|\{\})(?:\[\])*$/.test(text);
 }
 
 // A type the checker cannot write is still named by the expression that has it.

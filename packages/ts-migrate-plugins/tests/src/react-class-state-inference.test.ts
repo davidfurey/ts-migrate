@@ -76,6 +76,32 @@ export default Foo;
 };`);
   });
 
+  it('keeps a checker any visible instead of naming its expression', async () => {
+    const result = await runPlugin(`import React from 'react';
+
+const DEFAULTS = JSON.parse('{"retries": 3}');
+
+function parseConfig(text: string) {
+  return JSON.parse(text);
+}
+
+class Foo extends React.Component {
+  state = { defaults: DEFAULTS, config: parseConfig('{}') };
+
+  render() {
+    return <div>{this.state.defaults.retries}{this.state.config.retries}</div>;
+  }
+}
+
+export default Foo;
+`);
+
+    expect(stateAlias(result)).toBe(`type State = {
+    defaults: $TSFixMe;
+    config: $TSFixMe;
+};`);
+  });
+
   it('keeps null when a later observation resolves to a concrete type', async () => {
     const result = await runPlugin(`import React from 'react';
 
