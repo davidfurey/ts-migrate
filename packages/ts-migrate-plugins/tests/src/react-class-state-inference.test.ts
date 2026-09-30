@@ -132,6 +132,7 @@ export default Foo;
     const result = await runPlugin(`import React from 'react';
 
 class StateBag {
+  #secret = '';
   private token = '';
   protected attempts = 0;
   open = false;

@@ -884,7 +884,9 @@ function isPublicProperty(symbol: ts.Symbol): boolean {
   if (symbol.getName().startsWith('__@')) return false;
   const nonPublic = ts.ModifierFlags.Private | ts.ModifierFlags.Protected;
   return !(symbol.declarations ?? []).some(
-    (declaration) => (ts.getCombinedModifierFlags(declaration) & nonPublic) !== 0,
+    (declaration) =>
+      (ts.isPropertyDeclaration(declaration) && ts.isPrivateIdentifier(declaration.name)) ||
+      (ts.getCombinedModifierFlags(declaration) & nonPublic) !== 0,
   );
 }
 
