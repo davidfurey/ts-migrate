@@ -639,6 +639,38 @@ export default Foo;
 };`);
   });
 
+  it('refuses a qualified member type whose namespace only shares a name', async () => {
+    const lib = `export namespace Models {
+  export type Timer = { id: number };
+}
+export declare function makeTimer(): Models.Timer;
+`;
+    const result = await runPlugin(
+      `import React from 'react';
+import { makeTimer } from '/lib';
+
+namespace Models {
+  export type Timer = { tag: string };
+}
+
+class Foo extends React.Component {
+  state = { timer: makeTimer() };
+
+  render() {
+    return <div>{this.state.timer.id}</div>;
+  }
+}
+
+export default Foo;
+`,
+      { extraFiles: { 'lib.ts': lib } },
+    );
+
+    expect(stateAlias(result)).toBe(`type State = {
+    timer: ReturnType<typeof makeTimer>;
+};`);
+  });
+
   it('refuses a member whose type shares a name with one an earlier member imported', async () => {
     const lib = `export type Timer = { id: number };
 export declare function makeTimer(): Timer;
