@@ -788,7 +788,11 @@ function deriveType(
 
   if (!resolution) return undefined;
   const { checker } = resolution;
-  const resolved = resolveType(checker.getTypeAtLocation(expression), resolution, anyAlias);
+  const type = checker.getTypeAtLocation(expression);
+  if (isNoEvidenceType(type, checker)) {
+    return { kind: 'resolved', members: [anyTypeNode(anyAlias)] };
+  }
+  const resolved = resolveType(type, resolution, anyAlias);
   if (resolved.kind !== 'any') return resolved;
   // An answer of `any` is the checker having nothing to say rather than
   // evidence that the member holds anything, so it is carried as a resolved
@@ -799,6 +803,11 @@ function deriveType(
       members: [anyTypeNode(anyAlias)],
     }
   );
+}
+
+function isNoEvidenceType(type: ts.Type, checker: ts.TypeChecker): boolean {
+  const text = checker.typeToString(checker.getBaseTypeOfLiteralType(type));
+  return /^(?:never|unknown|object|null|undefined|\{\})(?:\[\])*$/.test(text);
 }
 
 // A type the checker cannot write is still named by the expression that has it.

@@ -49,6 +49,33 @@ export default Foo;
 };`);
   });
 
+  it('uses the any alias for a checker result with no evidence', async () => {
+    const result = await runPlugin(`import React from 'react';
+
+function buildWeeks(total: number) {
+  const weeks = [];
+  for (let index = 0; index < total; index += 1) {
+    if (index % 7 === 0) weeks.push([]);
+  }
+  return weeks;
+}
+
+class Foo extends React.Component {
+  state = { weeks: buildWeeks(30) };
+
+  render() {
+    return <div>{this.state.weeks.length}</div>;
+  }
+}
+
+export default Foo;
+`);
+
+    expect(stateAlias(result)).toBe(`type State = {
+    weeks: $TSFixMe;
+};`);
+  });
+
   it('keeps null when a later observation resolves to a concrete type', async () => {
     const result = await runPlugin(`import React from 'react';
 
