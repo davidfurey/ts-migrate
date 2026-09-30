@@ -78,6 +78,13 @@ export function buildTypeNode(typeStr: string, anyAlias?: string): ts.TypeNode {
     return ts.factory.createUnionTypeNode(unionParts.map((p) => buildTypeNode(p, anyAlias)));
   }
 
+  const intersectionParts = splitTopLevel(typeStr, ' & ');
+  if (intersectionParts.length > 1) {
+    return ts.factory.createIntersectionTypeNode(
+      intersectionParts.map((part) => buildTypeNode(part, anyAlias)),
+    );
+  }
+
   // typeof query: `typeof someValue` (possibly dotted, e.g. `typeof ns.value`).
   const typeofMatch = /^typeof\s+([A-Za-z_$][A-Za-z0-9_$.]*)$/.exec(typeStr);
   if (typeofMatch) {

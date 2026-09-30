@@ -418,11 +418,16 @@ function isUnconditionalConstructorWrite(
   while (ts.isBlock(node.parent)) {
     node = node.parent;
   }
-  if (!ts.isConstructorDeclaration(node.parent) || node.parent.parent !== classDeclaration) {
+  const constructorDeclaration = node.parent;
+  if (
+    !ts.isConstructorDeclaration(constructorDeclaration) ||
+    constructorDeclaration.parent !== classDeclaration ||
+    constructorDeclaration.body === undefined
+  ) {
     return false;
   }
 
-  const body = node;
+  const { body } = constructorDeclaration;
   let statement: ts.Node = assignment.parent;
   while (statement.parent !== body) statement = statement.parent;
   const statementIndex = body.statements.indexOf(statement as ts.Statement);
@@ -572,6 +577,8 @@ function collectTypeNames(node: ts.TypeNode, out: Set<string>): void {
     out.add(entityName.text);
   } else if (ts.isUnionTypeNode(node)) {
     node.types.forEach((type) => collectTypeNames(type, out));
+  } else if (ts.isIntersectionTypeNode(node)) {
+    node.types.forEach((type) => collectTypeNames(type, out));
   } else if (ts.isArrayTypeNode(node)) {
     collectTypeNames(node.elementType, out);
   } else if (ts.isParenthesizedTypeNode(node)) {
@@ -645,6 +652,11 @@ function withAnyAlias(node: ts.TypeNode, anyAlias: string | undefined): ts.TypeN
   if (ts.isUnionTypeNode(node)) {
     return ts.factory.createUnionTypeNode(node.types.map((type) => withAnyAlias(type, anyAlias)));
   }
+  if (ts.isIntersectionTypeNode(node)) {
+    return ts.factory.createIntersectionTypeNode(
+      node.types.map((type) => withAnyAlias(type, anyAlias)),
+    );
+  }
   if (ts.isArrayTypeNode(node)) {
     return ts.factory.createArrayTypeNode(withAnyAlias(node.elementType, anyAlias));
   }
@@ -666,6 +678,7 @@ function containsUnsupportedType(node: ts.TypeNode): boolean {
     return node.typeArguments?.some(containsUnsupportedType) ?? false;
   }
   if (ts.isUnionTypeNode(node)) return node.types.some(containsUnsupportedType);
+  if (ts.isIntersectionTypeNode(node)) return node.types.some(containsUnsupportedType);
   if (ts.isArrayTypeNode(node)) return containsUnsupportedType(node.elementType);
   if (ts.isParenthesizedTypeNode(node)) return containsUnsupportedType(node.type);
   return false;

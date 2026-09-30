@@ -75,6 +75,10 @@ describe('buildTypeNode', () => {
     expect(print('Array<Record<string, number>>')).toBe('Array<Record<string, number>>');
   });
 
+  it('reconstructs an intersection', () => {
+    expect(print('Left & Right')).toBe('Left & Right');
+  });
+
   it.each(['Set<"a\\\\b">', 'Set<"a\\"b">'])(
     'preserves escapes in string literal types: %s',
     (typeStr) => {

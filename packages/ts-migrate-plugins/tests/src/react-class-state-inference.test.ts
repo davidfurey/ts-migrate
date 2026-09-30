@@ -1057,6 +1057,34 @@ export default Foo;
 };`);
   });
 
+  it('writes an intersection type resolved for a method-scoped binding', async () => {
+    const lib = `export type Left = { left: number };
+export type Right = { right: number };
+`;
+    const result = await runPlugin(
+      `import React from 'react';
+import type { Left, Right } from '/lib';
+
+class Foo extends React.Component {
+  update(value: Left & Right) {
+    this.setState({ value });
+  }
+
+  render() {
+    return <div>{this.state.value}</div>;
+  }
+}
+
+export default Foo;
+`,
+      { extraFiles: { 'lib.ts': lib } },
+    );
+
+    expect(stateAlias(result)).toBe(`type State = {
+    value?: Left & Right;
+};`);
+  });
+
   it('keeps a generic type that explicitly contains any', async () => {
     const result = await runPlugin(`import React from 'react';
 
