@@ -721,8 +721,8 @@ function resolveType(
   collectTypeNames(node, names);
   const imports = resolution.resolveImports(type, names);
   if (imports === undefined) return { kind: 'any' };
-  // An import for a member that merging later drops costs nothing:
-  // updateImports only adds a name the text goes on to use.
+  // Imports stay local to this component until its inferred shape is accepted,
+  // so a component that falls back to `any` cannot leave one behind.
   resolution.imports.push(...imports);
 
   const members = ts.isUnionTypeNode(node) ? Array.from(node.types) : [node];
