@@ -1,6 +1,15 @@
+import path from 'path';
 import ts from 'typescript';
-import { realPluginRunner } from '../test-utils';
+import { createTypeChecker, reactCompilerOptions, realPluginRunner } from '../test-utils';
 import reactClassStatePlugin from '../../src/plugins/react-class-state';
+
+const rootDir = __dirname;
+const fileName = path.join(rootDir, 'react-class-state-inference-fixture.tsx');
+const compilerOptions: ts.CompilerOptions = {
+  ...reactCompilerOptions,
+  moduleResolution: ts.ModuleResolutionKind.Node10,
+};
+const errorsIn = createTypeChecker({ rootDir, fileName, compilerOptions, ownFilesOnly: true });
 
 /**
  * The checker-backed half of react-class-state: every case here is one the
@@ -47,6 +56,7 @@ export default Foo;
     expect(stateAlias(result)).toBe(`type State = {
     tags: string[];
 };`);
+    expect(errorsIn(result as string)).toEqual([]);
   });
 
   it('uses the any alias for a checker result with no evidence', async () => {
@@ -409,6 +419,9 @@ export default Foo;
     open: boolean;
     timer?: number;
 };`);
+    expect(errorsIn(result as string)).not.toContain(
+      expect.stringContaining('TS2741:'),
+    );
   });
 
   it('keeps a constructor write optional when an earlier return can skip it', async () => {
