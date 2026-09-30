@@ -876,9 +876,12 @@ function mergeTypes(
     return a;
   }
 
-  // Two syntactic answers that are not the same answer are `any`; anything the
-  // checker resolved is worth unioning, and worth keeping over an `any` the
-  // other side observed, which is what mergeMembers drops.
+  // A syntactic `any` records evidence the member accepts incompatible values
+  // or `undefined`, so a later checker answer cannot safely narrow it away.
+  if (a.kind === 'any' || b.kind === 'any') return { kind: 'any' };
+
+  // Checker answers carry no-evidence `any` as a resolved member, which is
+  // droppable beside a concrete answer by mergeMembers.
   if (a.kind === 'resolved' || b.kind === 'resolved') {
     return {
       kind: 'resolved',

@@ -129,6 +129,33 @@ export default Foo;
 };`);
   });
 
+  it('keeps conflicting syntactic evidence over a later resolved type', async () => {
+    const result = await runPlugin(`import React from 'react';
+
+class Foo extends React.Component {
+  state = { value: '' };
+
+  clear() {
+    this.setState({ value: 0 });
+  }
+
+  pickToday() {
+    this.setState({ value: new Date() });
+  }
+
+  render() {
+    return <div>{String(this.state.value)}</div>;
+  }
+}
+
+export default Foo;
+`);
+
+    expect(stateAlias(result)).toBe(`type State = {
+    value: $TSFixMe;
+};`);
+  });
+
   it('parenthesizes an array element two observations disagree about', async () => {
     const result = await runPlugin(`import React from 'react';
 
