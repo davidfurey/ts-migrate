@@ -484,6 +484,10 @@ function createResolution(
         if (first === undefined) printedAs.set(name, symbol);
         else if (first !== symbol) ambiguous.add(name);
       });
+      if (names.size === 1) {
+        const defaultSymbol = [...seen].find((symbol) => symbol.getName() === 'default');
+        if (defaultSymbol !== undefined) printedAs.set([...names][0], defaultSymbol);
+      }
       const scope = namesInScope();
 
       const writable = [...names].every((name) => {

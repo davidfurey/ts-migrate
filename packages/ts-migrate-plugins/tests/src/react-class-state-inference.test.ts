@@ -579,6 +579,35 @@ export default Foo;
     expect(result).not.toMatch(/import \{ (?:type )?Notification \}/);
   });
 
+  it('does not add a named import for a default-exported member type', async () => {
+    const lib = `export default class Notification {
+  level = 0;
+}
+export declare function makeNotification(): Notification;
+`;
+    const result = await runPlugin(
+      `import React from 'react';
+import { makeNotification } from '/lib';
+
+class Foo extends React.Component {
+  state = { note: makeNotification() };
+
+  render() {
+    return <div>{this.state.note.level}</div>;
+  }
+}
+
+export default Foo;
+`,
+      { extraFiles: { 'lib.ts': lib } },
+    );
+
+    expect(stateAlias(result)).toBe(`type State = {
+    note: ReturnType<typeof makeNotification>;
+};`);
+    expect(result).not.toMatch(/import \{ (?:type )?Notification \}/);
+  });
+
   it('refuses a member whose type only shares a name with what the file has', async () => {
     // Written `Timer`, the member would read as the file's own Timer, and the
     // import that would make it the other one cannot be added beside it.
