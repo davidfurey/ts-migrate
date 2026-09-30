@@ -551,7 +551,10 @@ function createResolution(
 function collectScope(checker: ts.TypeChecker, sourceFile: ts.SourceFile): Map<string, ts.Symbol> {
   const scope = new Map<string, ts.Symbol>();
   checker
-    .getSymbolsInScope(sourceFile, ts.SymbolFlags.Type | ts.SymbolFlags.Alias)
+    .getSymbolsInScope(
+      sourceFile,
+      ts.SymbolFlags.Type | ts.SymbolFlags.Value | ts.SymbolFlags.Alias,
+    )
     .forEach((symbol) => {
       const name = symbol.getName();
       if (scope.has(name)) return;

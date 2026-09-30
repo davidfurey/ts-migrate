@@ -639,6 +639,37 @@ export default Foo;
 };`);
   });
 
+  it('refuses a member type that conflicts with a local value binding', async () => {
+    const lib = `export class Status {
+  code = 0;
+}
+export declare function getStatus(): Status;
+`;
+    const result = await runPlugin(
+      `import React from 'react';
+import { getStatus } from '/lib';
+
+const Status = { OK: 0, FAILED: 1 };
+
+class Foo extends React.Component {
+  state = { status: getStatus() };
+
+  render() {
+    return <div>{this.state.status.code}</div>;
+  }
+}
+
+export default Foo;
+`,
+      { extraFiles: { 'lib.ts': lib } },
+    );
+
+    expect(stateAlias(result)).toBe(`type State = {
+    status: ReturnType<typeof getStatus>;
+};`);
+    expect(result).not.toMatch(/import \{ type Status \}/);
+  });
+
   it('refuses a qualified member type whose namespace only shares a name', async () => {
     const lib = `export namespace Models {
   export type Timer = { id: number };
