@@ -33,6 +33,29 @@ const harnesses: [string, RunCase][] = [
   ['with a checker', withChecker],
 ];
 
+it('keeps null as the any alias without a program when a later type is unresolved', async () => {
+  const result = await withoutProgram(`import React from 'react';
+
+declare function makeTimer(): { id: number };
+
+class Foo extends React.Component {
+  state = { timer: null };
+
+  componentDidMount() {
+    this.setState({ timer: makeTimer() });
+  }
+
+  render() {
+    return <div>{this.state.timer}</div>;
+  }
+}
+`);
+
+  expect(result).toContain(`type State = {
+    timer: $TSFixMe;
+};`);
+});
+
 describe.each(harnesses)('react-class-state plugin, %s', (_harness, runPlugin) => {
   it('annotates state if used', async () => {
     const text = `import React from 'react';
@@ -165,7 +188,6 @@ class Foo extends React.Component {
       label: '',
       items: [],
       ids: [1, 2],
-      user: null,
     };
   }
 
@@ -187,7 +209,6 @@ type State = {
     label: string;
     items: $TSFixMe[];
     ids: number[];
-    user: null;
 };
 
 class Foo extends React.Component<object, State> {
@@ -199,7 +220,6 @@ class Foo extends React.Component<object, State> {
       label: '',
       items: [],
       ids: [1, 2],
-      user: null,
     };
   }
 

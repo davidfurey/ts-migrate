@@ -736,10 +736,12 @@ function deriveType(
     case ts.SyntaxKind.TemplateExpression:
       return { kind: 'keyword', keyword: ts.SyntaxKind.StringKeyword };
     case ts.SyntaxKind.NullKeyword:
-      return {
-        kind: 'resolved',
-        members: [ts.factory.createLiteralTypeNode(ts.factory.createNull())],
-      };
+      return resolution
+        ? {
+            kind: 'resolved',
+            members: [ts.factory.createLiteralTypeNode(ts.factory.createNull())],
+          }
+        : { kind: 'any' };
     default:
       break;
   }
